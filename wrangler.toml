@@ -22,7 +22,7 @@ TZ_NAME = "Asia/Jerusalem"            # the timezone the sheet's clock times mea
 POLL_BATCH = "20"                     # sheets checked per 5-min tick (round-robin)
 VAPID_SUBJECT = "mailto:Tomeroso651@gmail.com"
 GOOGLE_CLIENT_ID = "626094394386-kfid75ahnm5erltolvamsrcjdj7ldrg7.apps.googleusercontent.com"
-VAPID_PUBLIC = "BHDM7fD5cvpLRLleXqU7K6OY8WiQkxuLhJpB-di0Y535Sr7TeGvXya24vGA3NGp3ZHLRp0QhAC2L0jQUemFQ8bc"
+VAPID_PUBLIC = "BBY9VLpIeSS9w7R-7yMalfyp4AVcOExCJgr9kYSit5H6-QgVOAS3qlDzfCHGpgfXWiDrB1zbs-L1oqpepwBDADk"
 
 # 5. Google Picker — needed to connect NEW sheets without the sensitive scope.
 #    Cloud console → APIs & Services → Library → enable "Google Picker API"
