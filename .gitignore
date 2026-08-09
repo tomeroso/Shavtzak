@@ -1,0 +1,20 @@
+node_modules/
+public/
+.wrangler/
+shots/
+demo.html
+demo-builder.html
+
+# never commit these
+*.p8
+*.p12
+*.jks
+*.keystore
+google-services.json
+ios/Shavtzak.xcodeproj/
+ios/build/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+.DS_Store

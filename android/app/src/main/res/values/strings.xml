@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="w_app">שבצ״ק</string>
+    <string name="w_on">בשמירה</string>
+    <string name="w_soon">מתחיל עוד מעט</string>
+    <string name="w_next">הבא שלך</string>
+    <string name="w_signed_out">לא מחובר</string>
+    <string name="w_open_app">פתח את האפליקציה</string>
+    <string name="w_desc">מה הדבר הבא שיש לך, ומתי</string>
+</resources>

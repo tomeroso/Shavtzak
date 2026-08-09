@@ -1,0 +1,36 @@
+name = "shavtzak"
+main = "worker/index.js"
+compatibility_date = "2026-01-01"
+
+# every 5 minutes: read every sheet, diff it, push to whoever is affected
+[triggers]
+crons = ["*/5 * * * *"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[kv_namespaces]]
+binding = "SH"
+id = "85e6ef9233b64c71af9f565966853b78"
+
+[vars]
+SHEET_ID = ""                         # optional — שבצ״קים are added from inside the app
+TZ_NAME = "Asia/Jerusalem"            # the timezone the sheet's clock times mean
+POLL_BATCH = "20"                     # sheets checked per 5-min tick (round-robin)
+VAPID_SUBJECT = "mailto:Tomeroso651@gmail.com"
+GOOGLE_CLIENT_ID = "626094394386-kfid75ahnm5erltolvamsrcjdj7ldrg7.apps.googleusercontent.com"
+VAPID_PUBLIC = "BHDM7fD5cvpLRLleXqU7K6OY8WiQkxuLhJpB-di0Y535Sr7TeGvXya24vGA3NGp3ZHLRp0QhAC2L0jQUemFQ8bc"
+
+# 5. Google Picker — needed to connect NEW sheets without the sensitive scope.
+#    Cloud console → APIs & Services → Library → enable "Google Picker API"
+#    → Credentials → Create credentials → API key (restrict it to your origin)
+PICKER_API_KEY = "AIzaSyAjC7bHTLc1sMoZqR1ekojxumX6DsPZaxU"
+#    Cloud console → home page → Project number (the digits, not the project ID)
+GOOGLE_PROJECT_NUMBER = "626094394386"
+
+# secrets (never in this file):
+#   npx wrangler secret put GOOGLE_CLIENT_SECRET     ← already uploaded
+#   npx wrangler secret put VAPID_PRIVATE            ← still needed for notifications

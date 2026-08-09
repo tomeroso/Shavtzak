@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android renders a notification icon as a silhouette, so it is white and
+     nothing else. Anything with colour in it comes out as a grey blob. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512"
+    android:tint="#FFFFFF">
+    <path
+        android:pathData="M256,92l132,58v100c0,92 -56,158 -132,174 -76,-16 -132,-82 -132,-174V150z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="34"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M256,214v56l38,24"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="28"
+        android:strokeLineCap="round" />
+</vector>

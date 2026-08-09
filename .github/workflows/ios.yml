@@ -1,0 +1,127 @@
+name: iOS
+
+# Builds the app on GitHub's own Mac and sends it to App Store Connect, so
+# nobody needs a Mac of their own. Run it by hand from the Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: 'Send the build to App Store Connect'
+        type: boolean
+        default: true
+  push:
+    tags: ['ios-v*']
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode on the runner
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+
+      # Fail here rather than three hundred lines into a build log, or worse,
+      # on a phone showing a blank screen.
+      - name: Check the settings that must be filled in
+        run: |
+          fail=0
+          if grep -q "YOUR-SUBDOMAIN" ios/project.yml; then
+            echo "::error file=ios/project.yml::SH_ORIGIN is still the placeholder. Set it to the address of your app."
+            fail=1
+          fi
+          for v in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            if [ -z "${!v}" ]; then echo "::error::secret $v is not set"; fail=1; fi
+          done
+          exit $fail
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # The build number has to climb on every upload or App Store Connect
+      # rejects it. The run number does that for free and never repeats.
+      - name: Stamp the build number
+        working-directory: ios
+        run: |
+          sed -i '' "s/CURRENT_PROJECT_VERSION: \"1\"/CURRENT_PROJECT_VERSION: \"${{ github.run_number }}\"/" project.yml
+          grep CURRENT_PROJECT_VERSION project.yml
+
+      - name: Generate the Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      # An App Store Connect API key replaces the certificate, the provisioning
+      # profiles and the Apple ID password. Xcode mints what it needs during the
+      # archive and the runner is destroyed afterwards.
+      - name: Write the App Store Connect key
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.ASC_KEY_P8 }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          chmod 600 ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+
+      - name: Archive
+        working-directory: ios
+        run: |
+          xcodebuild -project Shavtzak.xcodeproj \
+            -scheme Shavtzak \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Shavtzak.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+            archive
+
+      - name: Write the export options
+        working-directory: ios
+        run: |
+          cat > ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>destination</key><string>${{ (inputs.upload == false) && 'export' || 'upload' }}</string>
+            <key>uploadSymbols</key><true/>
+            <key>signingStyle</key><string>automatic</string>
+          </dict>
+          </plist>
+          PLIST
+          cat ExportOptions.plist
+
+      - name: Export, and upload to App Store Connect
+        working-directory: ios
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/Shavtzak.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}
+
+      # Kept whether or not the upload ran, so a failed submission does not mean
+      # rebuilding from scratch.
+      - name: Keep the build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shavtzak-${{ github.run_number }}
+          path: |
+            ios/build/export/**
+            ios/build/Shavtzak.xcarchive/Info.plist
+          if-no-files-found: warn
+          retention-days: 14

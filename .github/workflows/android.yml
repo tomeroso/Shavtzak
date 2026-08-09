@@ -1,0 +1,103 @@
+name: Android
+
+# Android builds on Linux, so this one is quick and cheap. It produces a signed
+# .aab for the Play Console and an .apk you can sideload to test right away.
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Also send it to the Play Console internal track'
+        type: boolean
+        default: false
+  push:
+    tags: ['android-v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # secrets cannot be tested directly in a step's `if`, so their presence is
+    # turned into a plain string here first
+    env:
+      HAS_FIREBASE: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
+      HAS_PLAY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      # Firebase is what carries the (empty) push message. Without this file the
+      # app still builds and works, it simply never receives one.
+      - name: Write google-services.json
+        if: env.HAS_FIREBASE == 'true'
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      # Fail here rather than shipping an app that opens on a blank screen.
+      - name: Check the settings that must be filled in
+        run: |
+          fail=0
+          if [ -z "$SH_ORIGIN" ] || case "$SH_ORIGIN" in *YOUR-SUBDOMAIN*) true;; *) false;; esac; then
+            echo "::error::repository variable SH_ORIGIN is not set to your app's address"
+            fail=1
+          fi
+          for v in ANDROID_KEYSTORE_B64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "::error::secret $v is not set"; fail=1; fi
+          done
+          exit $fail
+        env:
+          SH_ORIGIN: ${{ vars.SH_ORIGIN }}
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Write the upload keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 --decode > $RUNNER_TEMP/upload.jks
+          ls -l $RUNNER_TEMP/upload.jks
+
+      # Play rejects a version code it has seen before, so it climbs with the
+      # run number and never repeats.
+      - name: Build
+        working-directory: android
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/upload.jks
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          gradle --no-daemon \
+            -PSH_ORIGIN='${{ vars.SH_ORIGIN }}' \
+            -PVERSION_CODE=${{ github.run_number }} \
+            -PVERSION_NAME=1.0.${{ github.run_number }} \
+            bundleRelease assembleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shavtzak-android-${{ github.run_number }}
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      # Play will not accept an upload through the API until the very first
+      # bundle of a new app has been put in by hand. Leave this off for the
+      # first release, then turn it on.
+      - name: Send to the internal track
+        if: ${{ inputs.publish && env.HAS_PLAY == 'true' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.shavtzak.app
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed

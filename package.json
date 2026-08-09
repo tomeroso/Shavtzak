@@ -1,0 +1,31 @@
+{
+  "name": "shavtzak",
+  "private": true,
+  "version": "3.1.0",
+  "scripts": {
+    "build": "node build.js",
+    "demo": "node build-demo.js",
+    "parser:rev": "node scripts/parser-rev.js --write",
+    "test": "node scripts/parser-rev.js && node test/real.js && node test/layouts.js && node test/gen.js && node test/native.js && node test/widget.js",
+    "test:layouts": "node test/layouts.js",
+    "mock": "node test/mock-server.js",
+    "e2e": "node test/e2e.js",
+    "e2e:native": "node test/e2e-native.js",
+    "e2e:simple": "node test/e2e-simple.js",
+    "e2e:luz": "node test/e2e-luz.js",
+    "e2e:broadcast": "node test/e2e-broadcast.js",
+    "e2e:advanced": "node test/e2e-advanced.js",
+    "e2e:board": "REBASE=1 node test/e2e-board.js",
+    "e2e:leave": "node test/e2e-leave.js",
+    "e2e:badge": "REBASE=1 node test/e2e-badge.js",
+    "e2e:cold": "NO_SHEETS=1 node test/e2e-coldstart.js",
+    "dev": "npm run build && npx wrangler dev",
+    "check": "node scripts/check.js",
+    "deploy": "npm run build && node scripts/check.js && npx wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4",
+    "web-push": "^3",
+    "playwright": "^1"
+  }
+}

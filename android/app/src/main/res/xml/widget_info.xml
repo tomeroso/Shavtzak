@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 1800000 is the floor Android allows for an automatic refresh: half an hour.
+     Everything faster than that comes from the app opening, from a push, or
+     from the chronometer counting on its own. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="140dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget"
+    android:previewLayout="@layout/widget"
+    android:resizeMode="horizontal|vertical"
+    android:description="@string/w_desc"
+    android:widgetCategory="home_screen" />

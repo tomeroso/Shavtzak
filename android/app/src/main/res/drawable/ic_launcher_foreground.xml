@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The same shield and clock as the web icon, scaled into the safe area an
+     adaptive icon leaves in the middle. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group android:scaleX="0.62" android:scaleY="0.62" android:pivotX="256" android:pivotY="256">
+        <path
+            android:pathData="M256,92l132,58v100c0,92 -56,158 -132,174 -76,-16 -132,-82 -132,-174V150z"
+            android:strokeColor="#2DD4BF"
+            android:strokeWidth="30"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M182,266a74,74 0 1,1 148,0a74,74 0 1,1 -148,0"
+            android:strokeColor="#2DD4BF"
+            android:strokeWidth="22" />
+        <path
+            android:pathData="M256,222v46l32,20"
+            android:strokeColor="#2DD4BF"
+            android:strokeWidth="22"
+            android:strokeLineCap="round" />
+    </group>
+</vector>
