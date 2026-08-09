@@ -2964,16 +2964,33 @@
     try {
       const reg = await navigator.serviceWorker.ready;
       const existing = await reg.pushManager.getSubscription();
-      if (existing && LS.get('pushed', '') === existing.endpoint) return;   // already known to the server
+      // already known to the server, and made with the key we still use
+      if (existing && sameKey(existing) && LS.get('pushed', '') === existing.endpoint) return;
       await subscribePush();
       const sub = await reg.pushManager.getSubscription();
       if (sub) LS.set('pushed', sub.endpoint);
     } catch (e) { }
   }
 
+  /* A subscription is welded to the VAPID key it was made with. Regenerate the
+     pair on the server and every existing subscription keeps looking healthy
+     while quietly refusing every push, forever, because nothing ever asks for a
+     new one. So check, and start over when the key has moved. */
+  function sameKey(sub) {
+    try {
+      const want = urlB64(S.cfg.vapidPublic);
+      const has = new Uint8Array(sub.options && sub.options.applicationServerKey || []);
+      if (!has.length) return true;                 // browser won't say: leave it be
+      if (has.length !== want.length) return false;
+      for (let i = 0; i < has.length; i++) if (has[i] !== want[i]) return false;
+      return true;
+    } catch (e) { return true; }
+  }
+
   async function subscribePush() {
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
+    if (sub && !sameKey(sub)) { try { await sub.unsubscribe(); } catch (e) { } sub = null; }
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(S.cfg.vapidPublic) });
     await api('/api/push/subscribe', { subscription: sub.toJSON() });
     tellSW();

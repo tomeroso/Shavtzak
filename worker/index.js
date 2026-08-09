@@ -507,8 +507,12 @@ async function pushAccount(env, account, notif) {
   if (!rec || !rec.sub) return sent;
   try {
     const jwt = await vapidJWT(env, new URL(rec.sub.endpoint).origin);
-    await fetch(rec.sub.endpoint, { method: 'POST',
+    const res = await fetch(rec.sub.endpoint, { method: 'POST',
       headers: { TTL: '86400', Urgency: 'normal', 'Content-Length': '0', Authorization: `vapid t=${jwt}, k=${env.VAPID_PUBLIC}` } });
+    if (res.status === 404 || res.status === 410 || res.status === 403) {
+      await env.SH.delete('sub:' + account);
+      return sent;
+    }
     return true;
   } catch (e) { return sent; }
 }
@@ -543,7 +547,10 @@ async function notify(env, sheetId, affected) {
         headers: { TTL: '86400', Urgency: 'high', 'Content-Length': '0',
                    Authorization: `vapid t=${await vapidJWT(env, new URL(rec.sub.endpoint).origin)}, k=${env.VAPID_PUBLIC}` },
       });
-      if (res.status === 404 || res.status === 410) await env.SH.delete('sub:' + account);
+      /* 403 here means the subscription was made with a VAPID key we no
+         longer hold. Dropping it is what makes the app ask for a new one on
+         the next open; keeping it means silence forever. */
+      if (res.status === 404 || res.status === 410 || res.status === 403) await env.SH.delete('sub:' + account);
     } catch (e) { }
   }
 }
