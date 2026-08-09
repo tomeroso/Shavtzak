@@ -6,12 +6,9 @@ const P = require('../shared/parse.js');
 require('../shared/gen.js');
 const NAT = require('../shared/native.js');
 
-const UP = '/root/.claude/uploads/c15cd98b-5aa4-5033-9718-6043eaa36723';
-const FILES = [['שבצ״ק מבוא דותן', '50e1319b'], ['פילבוקס  חרמש', '80c939ec'], ['תגבצים', '9ae688c2'], ['כ״א', 'd4efa89c']];
-const tabs = FILES.map(([title, pre]) => {
-  const f = fs.readdirSync(UP).find(x => x.startsWith(pre) && x.endsWith('.csv'));
-  return { title, values: P.parseCSV(fs.readFileSync(p.join(UP, f), 'utf8')) };
-});
+const FIX = require('./fixtures.js');
+const tabs = FIX.tabs(P);
+if (!tabs) { FIX.skip('the mock server'); process.exit(0); }
 const RULES = { [P.normKey('מטבח')]: { mode: 'daily', start: '07:00', end: '23:59', label: 'מטבח' } };
 const R = P.parseWorkbook(tabs, { tz: 'Asia/Jerusalem', rules: RULES });
 /* The exported tabs are from a fixed week, so by default nothing is ever "on

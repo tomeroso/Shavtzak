@@ -3,17 +3,9 @@ require('../shared/match.js');
 const P = require('../shared/parse.js');
 const M = globalThis.SHMatch;
 
-const UP = '/root/.claude/uploads/c15cd98b-5aa4-5033-9718-6043eaa36723';
-const FILES = [
-  ['שבצ״ק מבוא דותן', '50e1319b'],
-  ['פילבוקס  חרמש', '80c939ec'],
-  ['תגבצים', '9ae688c2'],
-  ['כ״א', 'd4efa89c'],
-];
-const tabs = FILES.map(([title, pre]) => {
-  const f = fs.readdirSync(UP).find(x => x.startsWith(pre) && x.endsWith('.csv'));
-  return { title, values: P.parseCSV(fs.readFileSync(path.join(UP, f), 'utf8')) };
-});
+const FIX = require('./fixtures.js');
+const tabs = FIX.tabs(P);
+if (!tabs) { FIX.skip('the real-sheet test'); process.exit(0); }
 
 const TZ = 'Asia/Jerusalem';
 const NOW = new Date('2026-08-05T12:30:00Z');   // 15:30 in Israel

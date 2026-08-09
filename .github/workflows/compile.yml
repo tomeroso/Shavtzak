@@ -19,7 +19,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
-      - run: npm ci || npm install
+      # Playwright is only for the browser suites, which need the exported
+      # sheets and so do not run here. Skip its 100 MB of browsers.
+      - run: npm install --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm test
       - run: npm run build
 
